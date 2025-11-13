@@ -1,0 +1,65 @@
+platform :ios, '15.6'
+
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+
+# --- Use static by default for RN ---
+use_frameworks! :linkage => :static
+
+target 'DoozyApp' do
+  use_react_native!(
+    path: '../node_modules/react-native',
+    hermes_enabled: true,
+    fabric_enabled: false  # <- correct syntax
+  )
+
+  # React Native dependencies
+  pod 'RNSVG', :path => '../node_modules/react-native-svg'
+  pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-async-storage/async-storage'
+  pod 'react-native-safe-area-context', :path => '../node_modules/react-native-safe-area-context'
+  pod 'RNScreens', :path => '../node_modules/react-native-screens'
+  pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
+  pod 'RNDateTimePicker', :path => '../node_modules/@react-native-community/datetimepicker'
+  pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
+  pod 'RNInAppBrowser', :path => '../node_modules/react-native-inappbrowser-reborn'
+
+
+  # Firebase core + RNFirebase modules
+  pod 'FirebaseCore'
+  pod 'RNFBApp', :path => '../node_modules/@react-native-firebase/app'
+  pod 'RNFBAuth', :path => '../node_modules/@react-native-firebase/auth'
+  pod 'RNFBFirestore', :path => '../node_modules/@react-native-firebase/firestore'
+
+  # Google Places dynamic
+  pod 'GooglePlaces'
+
+  target 'DoozyAppTests' do
+    inherit! :complete
+  end
+end
+
+post_install do |installer|
+  react_native_post_install(installer, mac_catalyst_enabled: false)
+
+  # Force Hermes dSYM generation
+  installer.pods_project.targets.each do |target|
+    if target.name.downcase.include?('hermes')
+      target.build_configurations.each do |config|
+        config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+        config.build_settings['COPY_PHASE_STRIP'] = 'NO'
+      end
+    end
+  end
+
+  # Ensure RN bundling script is correct
+  installer.aggregate_targets.each do |aggregate|
+    aggregate.user_project.native_targets.each do |target|
+      phase = target.shell_script_build_phases.find { |s| s.name == "Bundle React Native code and images" }
+      next unless phase
+      phase.shell_script = <<~SCRIPT
+        export NODE_BINARY=node
+        export HERMES_ENABLE_DEBUGGER=1
+        ../node_modules/react-native/scripts/react-native-xcode.sh
+      SCRIPT
+    end
+  end
+end

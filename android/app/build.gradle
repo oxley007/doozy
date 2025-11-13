@@ -1,0 +1,82 @@
+def hermesEnabled = project.hasProperty("hermesEnabled") ? project.getProperty("hermesEnabled") : true
+
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+android {
+    namespace "com.fourdotsix.DoozyApp"
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.fourdotsix.DoozyApp"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 5
+        versionName "2.0.1"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("doozy-release-key.keystore")
+            storePassword "Haka2010!!"
+            keyAlias "doozyKey"
+            keyPassword "Haka2010!!"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // Core libraries (pinned to safe versions for RN 0.73)
+    implementation "androidx.core:core:1.12.0"
+    implementation "androidx.core:core-ktx:1.12.0"
+
+    implementation "com.facebook.react:react-native:0.73.4"
+
+    // Google Places
+    implementation 'com.google.android.libraries.places:places:3.2.0'
+
+    // Stable browser version
+    implementation 'androidx.browser:browser:1.6.0'
+
+    // Hermes or JSC
+    if (hermesEnabled.toBoolean()) {
+        implementation 'com.facebook.react:hermes-android'
+    } else {
+        implementation 'org.webkit:android-jsc:+'
+    }
+
+}
+
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+applyNativeModulesAppBuildGradle(project)
+apply plugin: "com.google.gms.google-services"
+
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.6.0'
+        force 'androidx.core:core:1.12.0'
+        force 'androidx.core:core-ktx:1.12.0'
+    }
+}
