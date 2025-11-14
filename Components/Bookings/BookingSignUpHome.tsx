@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef  } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Button } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
@@ -15,6 +15,7 @@ const StyledView = styled(View);
 
 export default function BookingSignUpHome() {
   const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
   const userState = useSelector((state) => state.user);
   const [firebaseLoggedIn, setFirebaseLoggedIn] = useState(false);
 
@@ -27,7 +28,11 @@ export default function BookingSignUpHome() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#E9FCDA' }}>
-      <ScrollView style={{ padding: 20 }}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={{ padding: 20 }}
+        contentContainerStyle={{ paddingBottom: 80 }} // avoids buttons getting cut off
+      >
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <Image
             source={require('../../assets/images/Doozy_dog_logo.png')}
@@ -74,7 +79,7 @@ export default function BookingSignUpHome() {
         )}
 
         <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
-          <BookingTypeSelector />
+          <BookingTypeSelector scrollViewRef={scrollViewRef} />
         </StyledView>
 
         <Button

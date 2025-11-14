@@ -76,11 +76,15 @@ export default function BookingCalendar({
   user,
   walkSelected,
   dooSelected,
+  yardSize,
+  deodSelected,
   onEmployeeSelected,
 }: {
   user: any;
   walkSelected: boolean;
   dooSelected: boolean;
+  yardSize: string | number | null;
+  deodSelected: boolean;
   onEmployeeSelected?: (employeeId: string, employeeName: string) => void;
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -95,6 +99,11 @@ export default function BookingCalendar({
   const navigation = useNavigation<any>();
   const reduxState = useSelector((state: RootState) => state);
   const localSelectedDates = reduxState.booking.selectedDates || [];
+
+  const now = new Date();
+  const nzOffset = 13 * 60; // NZDT +13
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const nzNow = new Date(utc + nzOffset * 60000);
 
   const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -228,6 +237,8 @@ useEffect(() => {
       bookedByUid: "local",
       BookingType: `Slot ${slot.start}-${slot.end}`,
       bookingServices: { walk: walkSelected, doo: dooSelected },
+      yardSize: yardSize ?? null,
+      deod: deodSelected,
       date: slotKey, // store same format as Firestore
       slotKey,
       employeeId: employee.employeeId,
@@ -299,6 +310,15 @@ useEffect(() => {
         <ScrollView style={{ padding: 20 }}>
           {daysOfWeek.map((day, dayIndex) => {
             const dayDate = getDateForWeekDay(dayIndex);
+
+            // Hide days before today
+            const todayStart = new Date(nzNow);
+            todayStart.setHours(0, 0, 0, 0);
+
+            if (dayDate.getTime() < todayStart.getTime()) {
+              return null;
+            }
+
             const slots = combinedSchedule[day.toLowerCase()] || [];
             const isExpanded = expandedDay === day;
 
@@ -343,40 +363,62 @@ useEffect(() => {
                 {slots.length === 0 && <RNText style={{ fontFamily: fonts.medium, fontSize: 16, marginBottom: 8 }}>No slots available</RNText>}
 
                 {slots.map((slot) => {
-                  const [startHour, startMin] = slot.start.split(":").map(Number);
-                  const slotTimestamp = getNZTimestamp(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), startHour, startMin);
-
                   // --- Determine employees to show ---
+                  const [startHour, startMin] = slot.start.split(":").map(Number);
+                  const slotTimestampForDay = getNZTimestamp(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), startHour, startMin);
+
+                  // Hide past slots on the current day
+                  if (dayDate.toDateString() === nzNow.toDateString() && slotTimestampForDay < nzNow.getTime()) {
+                    return null;
+                  }
+
+                  console.log("Processing slot:", slot.start, "-", slot.end);
+                  console.log("Slot timestamp for day:", slotTimestampForDay);
+                  console.log("Slot available employees:", slot.availableEmployees.map(e => e.employeeName));
+
+                  // Check if local user already booked this slot
                   const bookedForThisSlot = reduxState.booking.bookings.find(
                     (b) =>
-                      b.slotKey?.startsWith(`${slotTimestamp}-${slot.start}-${slot.end}-`) &&
+                      b.slotKey?.startsWith(`${slotTimestampForDay}-${slot.start}-${slot.end}-`) &&
                       b.bookedByUid === "local"
                   );
+
+                  console.log("bookedForThisSlot:", bookedForThisSlot);
 
                   let employeesToShow: EmployeeSlot[] = [];
                   let showRemoveButton = false;
 
                   if (bookedForThisSlot) {
-                    // Slot already booked by the user → keep only the booked employee
+                    // Local user booked → show only the booked employee
                     employeesToShow = slot.availableEmployees.filter(
                       (e) => e.employeeId === bookedForThisSlot.employeeId
                     );
                     showRemoveButton = true;
+                    console.log("Local booking exists, showing booked employee:", employeesToShow.map(e => e.employeeName));
                   } else {
-                    // Slot not booked by the user → show all employees who are NOT booked yet
+                    // Filter employees not booked by anyone else
                     employeesToShow = slot.availableEmployees.filter((e) => {
-                      const key = `${slotTimestamp}-${slot.start}-${slot.end}-${e.employeeId}`;
-                      // Keep all employees except those already booked by someone else
-                      const isBookedBySomeoneElse = reduxState.booking.bookings.some(
-                        (b) => b.slotKey === key && b.slotKey !== undefined && b.bookedByUid !== "local"
+                      const slotKey = `${slotTimestampForDay}-${slot.start}-${slot.end}-${e.employeeId}`;
+
+                      const isBookedBySomeoneElse = bookings.some(
+                        (b) =>
+                          b.slotKey === slotKey &&
+                          b.bookedByUid !== auth().currentUser?.uid
                       );
+
+                      console.log(`Employee: ${e.employeeName}, SlotKey: ${slotKey}, bookedBySomeoneElse?`, isBookedBySomeoneElse);
                       return !isBookedBySomeoneElse;
                     });
+
                     showRemoveButton = false;
+                    console.log("Employees available after filtering:", employeesToShow.map(e => e.employeeName));
                   }
 
-                  // Hide slot completely if no employees available
-                  if (employeesToShow.length === 0) return null;
+                  // Hide slot if no employees available
+                  if (employeesToShow.length === 0) {
+                    console.log("No employees available for this slot → hiding slot.");
+                    return null;
+                  }
 
                   const isSelected =
                     selectedSlot &&
@@ -415,7 +457,7 @@ useEffect(() => {
                           </RNText>
 
                           {employeesToShow.map((e) => {
-                            const slotKey = `${slotTimestamp}-${slot.start}-${slot.end}-${e.employeeId}`;
+                            const slotKey = `${slotTimestampForDay}-${slot.start}-${slot.end}-${e.employeeId}`;
                             const profileImgSrc = e.profilePic
                               ? { uri: e.profilePic }
                               : require("../../assets/images/default.png");
@@ -469,7 +511,6 @@ useEffect(() => {
               </View>
             );
           })}
-
         </ScrollView>
       </StyledView>
     </SafeAreaView>

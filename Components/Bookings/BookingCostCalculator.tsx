@@ -3,7 +3,7 @@ import { View, Text as RNText, TouchableOpacity } from 'react-native';
 import { styled } from 'nativewind';
 import fonts from '../../assets/fonts/fonts.js';
 import { useDispatch, useSelector } from "react-redux";
-import { setSelectedDates } from '../../store/bookingSlice';
+import { setSelectedDates, setBookings } from '../../store/bookingSlice';
 
 
 const StyledView = styled(View);
@@ -33,6 +33,7 @@ export default function BookingCostCalculator({
   onTotalChange,
 }: CostCalculatorProps) {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<SlotType | null>(null);
   const [total, setTotal] = useState(0);
   const dispatch = useDispatch();
 
@@ -215,9 +216,28 @@ export default function BookingCostCalculator({
 
   }, [walkSelected, dooSelected, deodSelected, numberOfDogs, central, yardSize, allBookings, selectedDates]);
 
-  const removeDate = (dateToRemove: string) => {
-    const newDates = selectedDates.filter(date => date !== dateToRemove);
+  const removeDate = (slotKey: string) => {
+    // 1️⃣ Remove booking from Redux bookings array
+    const reduxBookings = allBookings || [];
+    const updatedBookings = reduxBookings.filter(b => b.slotKey !== slotKey);
+    dispatch(setBookings(updatedBookings));
+
+    // 2️⃣ Remove from selectedDates
+    const newDates = selectedDates.filter(date => date !== slotKey);
     dispatch(setSelectedDates(newDates));
+
+    // 3️⃣ Optional: clear selected slot if it matches this one (if you are using selectedSlot state)
+    if (selectedSlot?.slot) {
+      const selectedSlotKey = `${getNZTimestamp(
+      selectedSlot.dayDate.getFullYear(),
+      selectedSlot.dayDate.getMonth(),
+      selectedSlot.dayDate.getDate(),
+      Number(selectedSlot.slot.start.split(":")[0]),
+      Number(selectedSlot.slot.start.split(":")[1])
+      )}-${selectedSlot.slot.start}-${selectedSlot.slot.end}-${selectedSlot.slot.availableEmployees[0].employeeId}`;
+
+      if (selectedSlotKey === slotKey) setSelectedSlot(null);
+    }
   };
 
   return (

@@ -1,6 +1,6 @@
 import 'react-native-get-random-values';
-import React, { useState, useEffect } from "react";
-import { View, Text as RNText, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text as RNText, ScrollView, TouchableOpacity, ActivityIndicator, Alert, LayoutAnimation } from "react-native";
 import { TextInput, Button, Checkbox, Menu, HelperText } from "react-native-paper";
 import { styled } from "nativewind";
 import { useNavigation } from "@react-navigation/native";
@@ -17,8 +17,13 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import InAppBrowser from "react-native-inappbrowser-reborn";
 
 const StyledView = styled(View);
+const StyledScrollView = styled(ScrollView);
 
-export default function BookingAndOwnerForm() {
+interface BookingTypeSelectorProps {
+  scrollViewRef: React.RefObject<ScrollView>;
+}
+
+export default function BookingTypeSelector({ scrollViewRef }: BookingTypeSelectorProps) {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const plan = useSelector((state: RootState) => state.plan);
@@ -37,6 +42,8 @@ export default function BookingAndOwnerForm() {
   const [numberOfDogsError, setNumberOfDogsError] = useState('');
   const [bookingTotal, setBookingTotal] = useState(0);
   const [assignedEmployee, setAssignedEmployee] = useState<{ id: string; name: string } | null>(null);
+  const [currentStep, setCurrentStep] = useState(0); // 0 = Service, 1 = Owner, 2 = Calendar
+
 
   const yardSizes = [
     { label: "Small - Typical townhouse or small backyard" },
@@ -79,8 +86,17 @@ export default function BookingAndOwnerForm() {
   const [accessYardError, setAccessYardError] = useState(false);
   const [yardSizeError, setYardSizeError] = useState(false);
 
+  // Run ONLY on first load
+  const hasInitialised = useRef(false);
+
   useEffect(() => {
-    if (user && Object.keys(user).length > 0) {
+    if (!user || Object.keys(user).length === 0) return;
+
+    // Only run auto-fill logic ONCE
+    if (!hasInitialised.current) {
+      hasInitialised.current = true;
+
+      // --- Auto-fill user fields ---
       setName(user.name || "");
       setEmail(user.email || "");
       setPhone(user.phone || "");
@@ -90,11 +106,55 @@ export default function BookingAndOwnerForm() {
       setSpecialInstruct(user.specialInstruct || user.extraDetails?.specialInstruct || "");
       setHomeNotes(user.homeNotes || user.extraDetails?.homeNotes || "");
       setYardSize(user.yardSize || "");
-      setWalkSelected(false); // default false, unless you want to auto-check
-      setDooSelected(false);  // default false, unless you want to auto-check
-      setDeodSelected(false); // default false, unless you want to auto-check
+
+      // ---- Auto-fill booking fields ----
+      const bookingArray = user.booking || [];
+      const mostRecentBooking =
+        bookingArray.length > 0 ? bookingArray[bookingArray.length - 1] : null;
+
+      if (mostRecentBooking) {
+        // Restore walk & doo
+        if (mostRecentBooking.bookingServices) {
+          const { walk, doo } = mostRecentBooking.bookingServices;
+          setWalkSelected(Boolean(walk));
+          setDooSelected(Boolean(doo));
+        }
+
+        // Restore yard size (if doo or deod was selected)
+        if (mostRecentBooking.yardSize) setYardSize(mostRecentBooking.yardSize);
+
+        // Restore deod
+        if (typeof mostRecentBooking.deod !== "undefined") setDeodSelected(Boolean(mostRecentBooking.deod));
+
+        // --- Auto-fill selectedDates from all bookings ---
+        const allSlotKeys = bookingArray.map(b => b.slotKey);
+        dispatch(setSelectedDates(allSlotKeys));
+
+        // --- Auto-fill assignedEmployee from last booking ---
+        setAssignedEmployee({
+          id: mostRecentBooking.employeeId,
+          name: mostRecentBooking.employeeName,
+        });
+      }
+
+      return;
     }
-  }, [user]);
+  }, [user, dispatch]);
+
+  useEffect(() => {
+    // wait for layout to finish before scrolling
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, 50);
+  }, [currentStep]);
+
+  const goToStep = (step: number) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // smooth animation
+    setCurrentStep(step);
+
+    // scroll to top
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   const inputProps = {
     mode: "outlined",
@@ -294,15 +354,24 @@ const handlePayCallback = async (amountCents: number, bookingIds: string[], fire
 
 
   return (
-    <ScrollView className="flex-1 p-4 bg-white">
-      <StyledView className="mb-6">
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 6 }}>
-          Select What Service You Want to Book
-        </RNText>
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 16, color: '#999999', marginBottom: 20 }}>
-          Select both options for a 25% discount!
-        </RNText>
-      </StyledView>
+    <StyledScrollView
+      ref={scrollViewRef}
+      className="flex-1 p-4 bg-white"
+      keyboardShouldPersistTaps="handled"
+    >
+
+
+      {/* --- Dog Service Form --- */}
+      {currentStep === 0 && (
+      <View>
+        <StyledView className="mb-6">
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 6 }}>
+            Select What Service You Want to Book
+          </RNText>
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 16, color: '#999999', marginBottom: 20 }}>
+            Select both options for a 25% discount!
+          </RNText>
+        </StyledView>
 
       {/* Walk selection */}
       <TouchableOpacity
@@ -519,265 +588,352 @@ const handlePayCallback = async (amountCents: number, bookingIds: string[], fire
           </TouchableOpacity>
         </View>
       )}
+      <Button
+        mode="contained"
+        buttonColor="#195E4B"
+        textColor="#FFFFFF"
+        style={{
+          fontFamily: fonts.medium,
+          width: '100%',
+          borderRadius: 8,
+          paddingVertical: 14,
+          marginVertical: 8, // adds spacing between buttons
+        }}
+        onPress={() => {
+          if (!walkSelected && !dooSelected) {
+            return Alert.alert("Select at least one service");
+          }
+          if (dooSelected && !yardSize) {
+            return Alert.alert("Tell us the yard size");
+          }
+          goToStep(1);
+        }}
+      >
+        Next
+      </Button>
+
+      </View>
+      )}
+      {/* --- Dog Service Form Ends --- */}
 
       {/* --- Dog Owner Details Form --- */}
-      <StyledView style={{ marginTop: 20 }}>
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 10 }}>Dog Owner Details</RNText>
+      {currentStep === 1 && (
+        <StyledView style={{ marginTop: 20 }}>
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 10 }}>Dog Owner Details</RNText>
 
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Your Name</RNText>
-        {nameError && <HelperText type="error">Name is required</HelperText>}
-        <TextInput
-          {...inputProps}
-          placeholder="Jane Smith"
-          value={name}
-          onChangeText={text => { setName(text); setNameError(false); }}
-          style={[
-            inputProps.style,
-            nameError ? { borderColor: 'red' } : {}
-          ]}
-        />
-
-
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Email</RNText>
-        {emailError && <HelperText type="error" visible={emailError}>Please enter a valid email</HelperText>}
-        <TextInput {...inputProps} placeholder="jane@doozy.co.nz" value={email} onChangeText={text => { setEmail(text); setEmailError(false); }} keyboardType="email-address" autoCapitalize="none" />
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Your Name</RNText>
+          {nameError && <HelperText type="error">Name is required</HelperText>}
+          <TextInput
+            {...inputProps}
+            placeholder="Jane Smith"
+            value={name}
+            onChangeText={text => { setName(text); setNameError(false); }}
+            style={[
+              inputProps.style,
+              nameError ? { borderColor: 'red' } : {}
+            ]}
+          />
 
 
-        {!user?.uid && (
-          <>
-            <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>
-              Password
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Email</RNText>
+          {emailError && <HelperText type="error" visible={emailError}>Please enter a valid email</HelperText>}
+          <TextInput {...inputProps} placeholder="jane@doozy.co.nz" value={email} onChangeText={text => { setEmail(text); setEmailError(false); }} keyboardType="email-address" autoCapitalize="none" />
+
+
+          {!user?.uid && (
+            <>
+              <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>
+                Password
+              </RNText>
+
+              <RNText style={{ fontFamily: fonts.medium, fontSize: 12, color: '#666', marginBottom: 8 }}>
+                Creating a login allows you to view special weekly discounts, see notes about our service at your house, follow your dog on our walks, and heaps of other member benefits.
+              </RNText>
+
+              <TextInput
+                {...inputProps}
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setPasswordError(text.length < 6 ? "Password must be at least 6 characters" : "");
+                }}
+                secureTextEntry
+              />
+              {passwordError ? (
+                <HelperText type="error" visible={!!passwordError}>
+                  {passwordError}
+                </HelperText>
+              ) : null}
+            </>
+          )}
+
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Phone</RNText>
+          {phoneError && <HelperText type="error">Phone number is required</HelperText>}
+          <TextInput
+            {...inputProps}
+            value={phone}
+            onChangeText={text => { setPhone(text); setPhoneError(false); }}
+            style={[
+              inputProps.style,
+              phoneError ? { borderColor: 'red' } : {}
+            ]}
+          />
+
+
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Dog Breed(s)</RNText>
+          {dogBreedsError && <HelperText type="error">Dog breed(s) required</HelperText>}
+          <TextInput
+            {...inputProps}
+            value={dogBreeds}
+            onChangeText={text => { setDogBreeds(text); setDogBreedsError(false); }}
+            style={[
+              inputProps.style,
+              dogBreedsError ? { borderColor: 'red' } : {}
+            ]}
+          />
+
+          {walkSelected && numberOfDogs && parseInt(numberOfDogs) > 1 && parseInt(numberOfDogs) < 4 && (
+            <RNText style={{ fontFamily: fonts.medium, fontSize: 14, color: '#FF0000', marginBottom: 10 }}>
+              {extraDogText}
             </RNText>
+          )}
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Number of Dogs</RNText>
 
-            <RNText style={{ fontFamily: fonts.medium, fontSize: 12, color: '#666', marginBottom: 8 }}>
-              Creating a login allows you to view special weekly discounts, see notes about our service at your house, follow your dog on our walks, and heaps of other member benefits.
-            </RNText>
+          <TextInput
+            {...inputProps}
+            placeholder="1"
+            value={numberOfDogs}
+            onChangeText={(value) => {
+              const numericValue = value.replace(/[^0-9]/g, '');
+              setNumberOfDogs(numericValue);
 
-            <TextInput
-              {...inputProps}
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError(text.length < 6 ? "Password must be at least 6 characters" : "");
-              }}
-              secureTextEntry
-            />
-            {passwordError ? (
-              <HelperText type="error" visible={!!passwordError}>
-                {passwordError}
-              </HelperText>
-            ) : null}
-          </>
-        )}
-
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Phone</RNText>
-        {phoneError && <HelperText type="error">Phone number is required</HelperText>}
-        <TextInput
-          {...inputProps}
-          value={phone}
-          onChangeText={text => { setPhone(text); setPhoneError(false); }}
-          style={[
-            inputProps.style,
-            phoneError ? { borderColor: 'red' } : {}
-          ]}
-        />
-
-
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Dog Breed(s)</RNText>
-        {dogBreedsError && <HelperText type="error">Dog breed(s) required</HelperText>}
-        <TextInput
-          {...inputProps}
-          value={dogBreeds}
-          onChangeText={text => { setDogBreeds(text); setDogBreedsError(false); }}
-          style={[
-            inputProps.style,
-            dogBreedsError ? { borderColor: 'red' } : {}
-          ]}
-        />
-
-        {walkSelected && numberOfDogs && parseInt(numberOfDogs) > 1 && parseInt(numberOfDogs) < 4 && (
-          <RNText style={{ fontFamily: fonts.medium, fontSize: 14, color: '#FF0000', marginBottom: 10 }}>
-            {extraDogText}
-          </RNText>
-        )}
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Number of Dogs</RNText>
-
-        <TextInput
-          {...inputProps}
-          placeholder="1"
-          value={numberOfDogs}
-          onChangeText={(value) => {
-            const numericValue = value.replace(/[^0-9]/g, '');
-            setNumberOfDogs(numericValue);
-
-            if (parseInt(numericValue || '0', 10) > 3) {
-              setNumberOfDogsError('Maximum dogs service is 3 at one household.');
-            } else {
-              setNumberOfDogsError('');
-            }
-          }}
-          keyboardType="numeric"
-        />
-        {numberOfDogsError ? (
-          <RNText style={{ color: 'red', marginBottom: 10, fontFamily: fonts.medium }}>
-            {numberOfDogsError}
-          </RNText>
-        ) : null}
-
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>How do we access your yard / Pick up your dog for walkies?</RNText>
-        {accessYardError && <HelperText type="error">Access instructions required</HelperText>}
-        <TextInput
-          {...inputProps}
-          value={accessYard}
-          onChangeText={text => { setAccessYard(text); setAccessYardError(false); }}
-          multiline
-          numberOfLines={4}
-          placeholder="See examples below."
-          placeholderTextColor="#888888"
-          style={[
-            inputProps.style,
-            accessYardError ? { borderColor: 'red' } : {},
-            { minHeight: 100, textAlignVertical: 'top' }
-          ]}
-        />
-
-
-        <View>
-          <RNText
-            style={{
-              fontFamily: fonts.medium,
-              fontSize: 14,
-              color: '#999999',
-              marginBottom: 20,
-              marginTop: 0,
+              if (parseInt(numericValue || '0', 10) > 3) {
+                setNumberOfDogsError('Maximum dogs service is 3 at one household.');
+              } else {
+                setNumberOfDogsError('');
+              }
             }}
-          >
+            keyboardType="numeric"
+          />
+          {numberOfDogsError ? (
+            <RNText style={{ color: 'red', marginBottom: 10, fontFamily: fonts.medium }}>
+              {numberOfDogsError}
+            </RNText>
+          ) : null}
+
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>How do we access your yard / Pick up your dog for walkies?</RNText>
+          {accessYardError && <HelperText type="error">Access instructions required</HelperText>}
+          <TextInput
+            {...inputProps}
+            value={accessYard}
+            onChangeText={text => { setAccessYard(text); setAccessYardError(false); }}
+            multiline
+            numberOfLines={4}
+            placeholder="See examples below."
+            placeholderTextColor="#888888"
+            style={[
+              inputProps.style,
+              accessYardError ? { borderColor: 'red' } : {},
+              { minHeight: 100, textAlignVertical: 'top' }
+            ]}
+          />
+
+
+          <View>
             <RNText
               style={{
-                fontFamily: fonts.bold,
+                fontFamily: fonts.medium,
                 fontSize: 14,
                 color: '#999999',
-                marginBottom: 8,
-                marginTop: 10,
+                marginBottom: 20,
+                marginTop: 0,
               }}
             >
-              Examples:{"\n"}
+              <RNText
+                style={{
+                  fontFamily: fonts.bold,
+                  fontSize: 14,
+                  color: '#999999',
+                  marginBottom: 8,
+                  marginTop: 10,
+                }}
+              >
+                Examples:{"\n"}
+              </RNText>
+              Side gate (please specify location){"\n"}
+              Back door (please specify location){"\n"}
+              Meet at door{"\n"}
+              Door code{"\n"}
+              Gate code{"\n"}
+              Use the buzzer/intercom at the gate{"\n"}
+              Garage door code/door opener{"\n"}
+              Front porch keybox code{"\n"}
+              Key under the doormat{"\n"}
+              Neighbour to give access to enter (name & contact ph)
             </RNText>
-            Side gate (please specify location){"\n"}
-            Back door (please specify location){"\n"}
-            Meet at door{"\n"}
-            Door code{"\n"}
-            Gate code{"\n"}
-            Use the buzzer/intercom at the gate{"\n"}
-            Garage door code/door opener{"\n"}
-            Front porch keybox code{"\n"}
-            Key under the doormat{"\n"}
-            Neighbour to give access to enter (name & contact ph)
-          </RNText>
-        </View>
+          </View>
 
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Any special instructions or notes about your dog?</RNText>
-        <TextInput {...inputProps} value={specialInstruct} onChangeText={setSpecialInstruct} multiline numberOfLines={4} placeholder="See examples below." placeholderTextColor="#888888" style={{ ...inputProps.style, minHeight: 100, textAlignVertical: 'top' }} />
-        <View>
-          <RNText
-            style={{
-              fontFamily: fonts.medium,
-              fontSize: 14,
-              color: '#999999',
-              marginBottom: 20,
-              marginTop: 0,
-            }}
-          >
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Any special instructions or notes about your dog?</RNText>
+          <TextInput {...inputProps} value={specialInstruct} onChangeText={setSpecialInstruct} multiline numberOfLines={4} placeholder="See examples below." placeholderTextColor="#888888" style={{ ...inputProps.style, minHeight: 100, textAlignVertical: 'top' }} />
+          <View>
             <RNText
               style={{
-                fontFamily: fonts.bold,
+                fontFamily: fonts.medium,
                 fontSize: 14,
                 color: '#999999',
-                marginBottom: 8,
-                marginTop: 10,
+                marginBottom: 20,
+                marginTop: 0,
               }}
             >
-              Examples:{"\n"}
+              <RNText
+                style={{
+                  fontFamily: fonts.bold,
+                  fontSize: 14,
+                  color: '#999999',
+                  marginBottom: 8,
+                  marginTop: 10,
+                }}
+              >
+                Examples:{"\n"}
+              </RNText>
+              Anxious around strangers{"\n"}
+              Allergies (please specify){"\n"}
+              Aggressive or protective behavior{"\n"}
+              Medical conditions or medications{"\n"}
+              Favourite treats or toys to calm them{"\n"}
+              Best way to approach (slowly, quietly, etc.){"\n"}
+              Avoid loud noises or sudden movements{"\n"}
+              Dogs that need to stay on leash or in a specific area{"\n"}
+              Other pets on property (cats, chickens, etc.){"\n"}
             </RNText>
-            Anxious around strangers{"\n"}
-            Allergies (please specify){"\n"}
-            Aggressive or protective behavior{"\n"}
-            Medical conditions or medications{"\n"}
-            Favourite treats or toys to calm them{"\n"}
-            Best way to approach (slowly, quietly, etc.){"\n"}
-            Avoid loud noises or sudden movements{"\n"}
-            Dogs that need to stay on leash or in a specific area{"\n"}
-            Other pets on property (cats, chickens, etc.){"\n"}
-          </RNText>
-        </View>
+          </View>
 
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Any notes to help us find your home?</RNText>
-        <TextInput {...inputProps} value={homeNotes} onChangeText={setHomeNotes} multiline numberOfLines={4} style={{ ...inputProps.style, minHeight: 100, textAlignVertical: 'top' }} />
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 14, color: '#999999' }}>Any notes to help us find your home?</RNText>
+          <TextInput {...inputProps} value={homeNotes} onChangeText={setHomeNotes} multiline numberOfLines={4} style={{ ...inputProps.style, minHeight: 100, textAlignVertical: 'top' }} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 8 }}>
+            <Button
+              mode="contained"
+              buttonColor="#CCCCCC"
+              textColor="#333333"
+              style={{
+                fontFamily: fonts.medium,
+                flex: 1,
+                borderRadius: 8,
+                paddingVertical: 14,
+                marginRight: 8, // space between buttons
+              }}
+              onPress={() => goToStep(0)}
+            >
+              Back
+            </Button>
 
-        <BookingCalendar
-          user={user}
-          name={name}
-          email={email}
-          phone={phone}
-          dogBreeds={dogBreeds}
-          numberOfDogs={numberOfDogs || ""}
-          accessYard={accessYard}
-          yardSize={yardSize}
-          walkSelected={walkSelected}
-          dooSelected={dooSelected}
-          onEmployeeSelected={(id, name) => {
-              console.log("Employee Selected:", id, name);
-              setAssignedEmployee({ id, name });
-            }}
-        />
+            <Button
+              mode="contained"
+              buttonColor="#195E4B"
+              textColor="#FFFFFF"
+              style={{
+                fontFamily: fonts.medium,
+                flex: 1,
+                borderRadius: 8,
+                paddingVertical: 14,
+              }}
+              onPress={() => goToStep(2)}
+            >
+              Next
+            </Button>
+          </View>
 
-        <BookingCostCalculator
-          walkSelected={walkSelected}
-          dooSelected={dooSelected}
-          deodSelected={deodSelected}
-          numberOfDogs={numberOfDogs ? parseInt(numberOfDogs) : 1}
-          central={user.address?.central || false}
-          yardSize={yardSize}
-          onTotalChange={setBookingTotal} // pass callback
-        />
+          </StyledView>
+        )}
+        {/* --- Dog Owner Details Form ends --- */}
 
-        {/* T&C */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 20 }}>
-          <TouchableOpacity
-            onPress={() => setAcceptedTerms(!acceptedTerms)}
+        {/* --- Booking Calendar & total cost Form --- */}
+        {currentStep === 2 && (
+        <StyledView>
+          <BookingCalendar
+            user={user}
+            name={name}
+            email={email}
+            phone={phone}
+            dogBreeds={dogBreeds}
+            numberOfDogs={numberOfDogs || ""}
+            accessYard={accessYard}
+            yardSize={yardSize}
+            walkSelected={walkSelected}
+            dooSelected={dooSelected}
+            deodSelected={deodSelected}
+            yardSize={yardSize}
+            onEmployeeSelected={(id, name) => {
+                console.log("Employee Selected:", id, name);
+                setAssignedEmployee({ id, name });
+              }}
+          />
+
+          <BookingCostCalculator
+            walkSelected={walkSelected}
+            dooSelected={dooSelected}
+            deodSelected={deodSelected}
+            numberOfDogs={numberOfDogs ? parseInt(numberOfDogs) : 1}
+            central={user.address?.central || false}
+            yardSize={yardSize}
+            onTotalChange={setBookingTotal} // pass callback
+          />
+
+          {/* T&C */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 20 }}>
+            <TouchableOpacity
+              onPress={() => setAcceptedTerms(!acceptedTerms)}
+              style={{
+                width: 26, height: 26, borderWidth: 1.5, borderColor: '#195E4B', borderRadius: 4,
+                justifyContent: 'center', alignItems: 'center', backgroundColor: acceptedTerms ? '#195E4B' : '#fff'
+              }}
+            >
+              {acceptedTerms && <RNText style={{ color: '#fff', fontSize: 18 }}>✓</RNText>}
+            </TouchableOpacity>
+            <RNText style={{ marginLeft: 8 }}>I agree to the{' '}
+              <RNText style={{ color: 'blue' }} onPress={() => navigation.navigate('Terms', { from: 'DoozyHome' })}>
+                Terms & Conditions
+              </RNText>
+            </RNText>
+          </View>
+
+          <Button
+            mode="contained"
+            textColor="#FFFFFF"
+            onPress={handleSubmit}
+            disabled={loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1}
             style={{
-              width: 26, height: 26, borderWidth: 1.5, borderColor: '#195E4B', borderRadius: 4,
-              justifyContent: 'center', alignItems: 'center', backgroundColor: acceptedTerms ? '#195E4B' : '#fff'
+              paddingVertical: 12,
+              borderRadius: 6,
+              backgroundColor: loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1
+                ? '#999999'
+                : '#195E4B',
+              marginBottom: 40,
             }}
+            labelStyle={{ fontSize: 16, fontWeight: '800' }}
           >
-            {acceptedTerms && <RNText style={{ color: '#fff', fontSize: 18 }}>✓</RNText>}
-          </TouchableOpacity>
-          <RNText style={{ marginLeft: 8 }}>I agree to the{' '}
-            <RNText style={{ color: 'blue' }} onPress={() => navigation.navigate('Terms', { from: 'DoozyHome' })}>
-              Terms & Conditions
-            </RNText>
-          </RNText>
-        </View>
+            {loading ? <ActivityIndicator color="#fff" /> : "Book & Go to Payment"}
+          </Button>
 
-        <Button
-          mode="contained"
-          textColor="#FFFFFF"
-          onPress={handleSubmit}
-          disabled={loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1}
-          style={{
-            paddingVertical: 12,
-            borderRadius: 6,
-            backgroundColor: loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1
-              ? '#999999'
-              : '#195E4B',
-            marginBottom: 40,
-          }}
-          labelStyle={{ fontSize: 16, fontWeight: '800' }}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : "Book & Go to Payment"}
-        </Button>
-      </StyledView>
-    </ScrollView>
+                    <Button
+                      mode="contained"
+                      buttonColor="#CCCCCC"
+                      textColor="#333333"
+                      style={{
+                        fontFamily: fonts.medium,
+                        width: '100%',
+                        borderRadius: 8,
+                        paddingVertical: 14,
+                        marginVertical: 8, // adds spacing between buttons
+                      }}
+                      onPress={() => goToStep(1)}
+                    >
+                      Back
+                    </Button>
+        </StyledView>
+      )}
+      {/* --- Booking Calendar & total cost Form end --- */}
+    </StyledScrollView>
   );
 }
