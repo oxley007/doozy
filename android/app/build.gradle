@@ -7,12 +7,13 @@ apply plugin: "com.facebook.react"
 android {
     namespace "com.fourdotsix.DoozyApp"
     compileSdk rootProject.ext.compileSdkVersion
+    ndkVersion rootProject.ext.ndkVersion
 
     defaultConfig {
         applicationId "com.fourdotsix.DoozyApp"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
+        versionCode 9
         versionName "2.0.2"
     }
 
