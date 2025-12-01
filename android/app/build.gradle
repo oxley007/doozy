@@ -13,8 +13,8 @@ android {
         applicationId "com.fourdotsix.DoozyApp"
         minSdk rootProject.ext.minSdkVersion
         targetSdk rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "2.0.2"
+        versionCode 10
+        versionName "2.0.3"
     }
 
     compileOptions {
