@@ -21,6 +21,7 @@ target 'DoozyApp' do
   pod 'RNDateTimePicker', :path => '../node_modules/@react-native-community/datetimepicker'
   pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
   pod 'RNInAppBrowser', :path => '../node_modules/react-native-inappbrowser-reborn'
+  pod 'RNReanimated', :path => '../node_modules/react-native-reanimated'
 
 
   # Firebase core + RNFirebase modules

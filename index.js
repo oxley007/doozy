@@ -3,6 +3,7 @@
  */
 
 // 👇 add this at the very top
+import 'react-native-reanimated'; 
 import 'react-native-get-random-values';
 
 import { AppRegistry, NativeModules } from 'react-native';

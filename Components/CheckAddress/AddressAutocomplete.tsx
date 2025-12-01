@@ -24,7 +24,6 @@ export default function AddressAutocomplete({ onSelect }: { onSelect: (place: an
     try {
       setLoading(true);
 
-      // Bias toward NZ/AU by using a central lat/lng and large radius (~5000 km)
       const locationBias = "-36.8485,174.7633"; // Auckland center
       const radiusBias = 5000000; // 5000 km
 
@@ -35,24 +34,61 @@ export default function AddressAutocomplete({ onSelect }: { onSelect: (place: an
       const res = await fetch(url);
       const json = await res.json();
 
-      if (!json.predictions) {
+      console.log("Autocomplete API response:", json); // ✅ log the full response
+
+      if (json.status !== "OK") {
+        console.warn("Google Places Autocomplete error:", json.status, json.error_message);
         setSuggestions([]);
         return;
       }
 
-      // ✅ Filter only NZ or AU addresses
       const filtered = json.predictions.filter(item =>
-        //item.description.endsWith("New Zealand") || item.description.endsWith("Australia")
         item.description.endsWith("New Zealand")
       );
 
       setSuggestions(filtered);
     } catch (e) {
-      console.log('Autocomplete error:', e);
+      console.log('Autocomplete fetch error:', e);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const selectSuggestion = async (item: any) => {
+    try {
+      skipNextFetch.current = true;
+      setSuggestions([]); // hide list immediately
+
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${item.place_id}&key=${GOOGLE_API_KEY}`;
+      const res = await fetch(url);
+      const json = await res.json();
+
+      console.log("Place Details API response:", json); // ✅ log the full response
+
+      if (json.status !== "OK") {
+        console.warn("Google Place Details error:", json.status, json.error_message);
+        return;
+      }
+
+      const location = json.result?.geometry?.location;
+      if (!location) {
+        console.warn('⚠️ No geometry found for', item);
+        return;
+      }
+
+      const fullAddress = json.result?.formatted_address || item.description;
+      setQuery(fullAddress);
+
+      onSelect({
+        description: fullAddress,
+        place_id: item.place_id,
+        lat: location.lat,
+        lng: location.lng,
+      });
+    } catch (e) {
+      console.log('Place details fetch error:', e);
+    }
+  };  
 
   const debounce = (fn: any, delay = 300) => {
     let timeout: any;
@@ -67,37 +103,6 @@ export default function AddressAutocomplete({ onSelect }: { onSelect: (place: an
     setQuery(text);
     debouncedFetch(text);
   };
-
-  const selectSuggestion = async (item: any) => {
-  try {
-    skipNextFetch.current = true;
-    setSuggestions([]); // hide list immediately
-
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${item.place_id}&key=${GOOGLE_API_KEY}`;
-    const res = await fetch(url);
-    const json = await res.json();
-
-    const location = json.result?.geometry?.location;
-    if (!location) {
-      console.warn('⚠️ No geometry found for', item);
-      return;
-    }
-
-    const fullAddress = json.result?.formatted_address || item.description;
-
-    // ✅ set the TextInput to the full address
-    setQuery(fullAddress);
-
-    onSelect({
-      description: fullAddress,
-      place_id: item.place_id,
-      lat: location.lat,
-      lng: location.lng,
-    });
-  } catch (e) {
-    console.log('Place details error:', e);
-  }
-};
 
   const clearInput = () => {
     setQuery('');

@@ -236,7 +236,7 @@ export default function DoozyHome() {
                 }}
               >
                 Or see further below to{' '}
-                <RNText style={{ backgroundColor: 'yellow', fontWeight: 'bold' }}>
+                <RNText style={{ color: '#333', fontWeight: 'bold' }}>
                   save up to 70%
                 </RNText>{' '}
                  by also subscribing to our dog walking services!

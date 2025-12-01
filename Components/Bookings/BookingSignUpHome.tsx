@@ -18,6 +18,7 @@ export default function BookingSignUpHome() {
   const scrollViewRef = useRef<ScrollView>(null);
   const userState = useSelector((state) => state.user);
   const [firebaseLoggedIn, setFirebaseLoggedIn] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -33,10 +34,10 @@ export default function BookingSignUpHome() {
         style={{ padding: 20 }}
         contentContainerStyle={{ paddingBottom: 80 }} // avoids buttons getting cut off
       >
-        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ justifyContent: 'center', alignItems: 'center', paddingTop: 40 }}>
           <Image
-            source={require('../../assets/images/Doozy_dog_logo.png')}
-            style={{ width: 325, height: 325 }}
+            source={require('../../assets/images/doozy_nz_app_logo_web.png')}
+            style={{ width: 225, height: 225 }}
             resizeMode="contain"
           />
         </View>
@@ -49,14 +50,11 @@ export default function BookingSignUpHome() {
         </View>
 
         {/* Only show login prompt if user is NOT logged in in Firebase */}
-        {!firebaseLoggedIn && (
+        {!firebaseLoggedIn && currentStep === 0 && (
           <StyledView style={styles.card}>
             <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 10, textAlign: 'center' }}>
-                Already booked with us before? Log in first!
-              </Text>
-              <Text style={{ fontFamily: fonts.medium, fontSize: 18, color: '#666666', lineHeight: 24, textAlign: 'center', paddingHorizontal: 20 }}>
-                If you’ve booked with Doozy before, log in to quickly fill out your profile and continue.
+                Already booked with us before? Login now!
               </Text>
             </View>
             <Button
@@ -72,14 +70,17 @@ export default function BookingSignUpHome() {
             >
               Go to Login Page
             </Button>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 10, marginTop: 20, textAlign: 'center' }}>
-            Otherwise, continue below to create your first booking.
+            <Text style={{ fontFamily: fonts.medium, fontSize: 18, color: '#666666', lineHeight: 24, textAlign: 'center', paddingHorizontal: 20, marginTop: 20 }}>
+              Otherwise, continue below to create your first booking.
             </Text>
           </StyledView>
         )}
 
         <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
-          <BookingTypeSelector scrollViewRef={scrollViewRef} />
+          <BookingTypeSelector
+            scrollViewRef={scrollViewRef}
+            onStepChange={(step) => setCurrentStep(step)}
+          />
         </StyledView>
 
         <Button
@@ -92,7 +93,7 @@ export default function BookingSignUpHome() {
           }}
           style={{ marginBottom: 10 }}
         >
-          Back
+          Select Another Plan
         </Button>
 
         <Testimonials />

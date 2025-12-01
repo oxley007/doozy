@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text as RNText, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text as RNText, Animated, TouchableOpacity } from "react-native";
 import { Button, Card, List } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -7,10 +7,17 @@ import { styled } from "nativewind";
 import { useDispatch } from "react-redux";
 import { setSelectedPlan } from "../../store/store";
 import fonts from "../../assets/fonts/fonts.js";
+//import createFadeInOnScroll from '../Fade/FadeInOnScroll';
+import FadeInOutSection from '../Fade/FadeInOutSection';
 
 const StyledView = styled(View);
 
-export default function DogWalkPlanScreen() {
+interface DogWalkPlanScreenProps {
+  scrollY: Animated.Value;
+}
+
+export default function DogWalkPlanScreen({ scrollY }: DogWalkPlanScreenProps) {
+  //const FadeInOnScroll = createFadeInOnScroll(scrollY);
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -89,8 +96,10 @@ export default function DogWalkPlanScreen() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-gray-100 p-4">
-      <View style={{ paddingTop: 20, paddingBottom: 40 }}>
+    <Animated.ScrollView
+      className="flex-1 bg-gray-100 p-4"
+    >
+      <View style={{ paddingTop: 20, paddingBottom: 10 }}>
         <RNText style={{ fontFamily: fonts.bold, fontSize: 31, color: '#195E4B' }}>
           Subscription Options
         </RNText>
@@ -98,10 +107,9 @@ export default function DogWalkPlanScreen() {
           style={{
             fontFamily: fonts.bold,
             fontSize: 18,
-            color: "#999",
+            color: "#333",
             lineHeight: 24,
             marginTop: 10,
-            backgroundColor: 'yellow',
             fontWeight: 'bold'
           }}
         >
@@ -120,181 +128,182 @@ export default function DogWalkPlanScreen() {
         </RNText>
       </View>
 
-      <View style={{ paddingTop: 20, paddingBottom: 40 }}>
-        <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: "#195E4B" }}>
-          Dog Walking Subscriptions
-        </RNText>
-        <RNText
-          style={{
-            fontFamily: fonts.bold,
-            fontSize: 18,
-            color: "#999",
-            lineHeight: 24,
-            marginTop: 10,
-          }}
-        >
-          Convenient, regular walks for your furry friend!
-        </RNText>
-      </View>
+      <View visible={expanded} delay={0}>
+        <View style={{ paddingTop: 20, paddingBottom: 10 }}>
+          <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: "#195E4B" }}>
+            Dog Walking Subscriptions
+          </RNText>
+          <RNText
+            style={{
+              fontFamily: fonts.bold,
+              fontSize: 18,
+              color: "#999",
+              lineHeight: 24,
+              marginTop: 10,
+            }}
+          >
+            Convenient, regular walks for your furry friend!
+          </RNText>
+        </View>
 
-      <List.Section style={{ padding: 0 }}>
-        {Object.entries(planGroups).map(([groupTitle, plans]) => {
-          const isExpanded = expanded === groupTitle;
+        <List.Section style={{ padding: 0 }}>
+          {Object.entries(planGroups).map(([groupTitle, plans]) => {
+            const isExpanded = expanded === groupTitle;
+            let iconName = "pets";
+            if (groupTitle.includes("Premium")) iconName = "star";
+            if (groupTitle.includes("Artificial Grass")) iconName = "eco";
+            if (groupTitle.includes("Standard")) iconName = "grass";
 
-          let iconName = "pets"; // Default icon
-          if (groupTitle.includes("Premium")) iconName = "star";
-          if (groupTitle.includes("Artificial Grass")) iconName = "eco";
-          if (groupTitle.includes("Standard")) iconName = "grass";
-
-          return (
-            <View key={groupTitle} style={{ marginVertical: 10 }}>
-              <TouchableOpacity
-                onPress={() => toggleExpand(groupTitle)}
-                style={{
-                  backgroundColor: isExpanded ? "#D69E1F" : "#F4C430",
-                  borderRadius: 12,
-                  height: 140,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: 10,
-                }}
-              >
-                <MaterialIcons
-                  name={iconName}
-                  size={48}
-                  color="#fff"
-                  style={{ marginBottom: 8 }}
-                />
-                <RNText
+            return (
+              <View key={groupTitle} style={{ marginVertical: 10 }}>
+                <TouchableOpacity
+                  onPress={() => toggleExpand(groupTitle)}
                   style={{
-                    fontFamily: fonts.bold,
-                    fontSize: 22,
-                    color: "#fff",
-                    textAlign: "center",
+                    backgroundColor: isExpanded ? "#D69E1F" : "#F4C430",
+                    borderRadius: 12,
+                    height: 140,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 10,
                   }}
                 >
-                  {groupTitle}
-                </RNText>
-                <MaterialIcons
-                  name={isExpanded ? "expand-less" : "expand-more"}
-                  size={36}
-                  color="#fff"
-                  style={{ position: "absolute", top: 10, right: 10 }}
-                />
-              </TouchableOpacity>
+                  <MaterialIcons
+                    name={iconName}
+                    size={48}
+                    color="#fff"
+                    style={{ marginBottom: 8 }}
+                  />
+                  <RNText
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 22,
+                      color: "#fff",
+                      textAlign: "center",
+                    }}
+                  >
+                    {groupTitle}
+                  </RNText>
+                  <MaterialIcons
+                    name={isExpanded ? "expand-less" : "expand-more"}
+                    size={36}
+                    color="#fff"
+                    style={{ position: "absolute", top: 10, right: 10 }}
+                  />
+                </TouchableOpacity>
 
-              {isExpanded && (
-                <View style={{ paddingTop: 20 }}>
-                  {plans.map((plan) => {
-                    const details = getPlanDetails(plan);
-                    return (
-                      <Card
-                        key={plan}
-                        style={{
-                          borderRadius: 5,
-                          elevation: 0,
-                          shadowColor: "transparent",
-                          padding: 20,
-                          marginBottom: 40,
-                          backgroundColor: "#eeeeee",
-                          borderWidth: 0,
-                        }}
-                      >
-                        {renderBanner(plan)}
-
-                        <RNText
+                {isExpanded && (
+                  <View style={{ paddingTop: 20 }}>
+                    {plans.map((plan) => {
+                      const details = getPlanDetails(plan);
+                      return (
+                        <Card
+                          key={plan}
                           style={{
-                            fontFamily: fonts.bold,
-                            fontSize: 32,
-                            color: "#195E4B",
-                            marginBottom: 10,
+                            borderRadius: 5,
+                            elevation: 0,
+                            shadowColor: "transparent",
+                            padding: 20,
+                            marginBottom: 40,
+                            backgroundColor: "#eeeeee",
+                            borderWidth: 0,
                           }}
                         >
-                          {details.title}
-                        </RNText>
-                        <RNText
-                          style={{
-                            fontFamily: fonts.medium,
-                            fontSize: 24,
-                            color: "#999999",
-                            paddingBottom: 30,
-                          }}
-                        >
-                          {details.desc}
-                        </RNText>
-                        <RNText
-                          style={{
-                            fontFamily: fonts.medium,
-                            fontSize: 32,
-                            color: "#195E4B",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {details.priceVisit}
-                        </RNText>
+                          {renderBanner(plan)}
 
-                        {details.features.map((feature, index) => (
-                          <View
-                            key={index}
+                          <RNText
                             style={{
-                              flexDirection: "row",
-                              alignItems: "flex-start",
-                              marginBottom: 4,
+                              fontFamily: fonts.bold,
+                              fontSize: 32,
+                              color: "#195E4B",
+                              marginBottom: 10,
                             }}
                           >
-                            <MaterialIcons
-                              name="check"
-                              size={15}
-                              color="#195E4B"
-                              style={{ marginRight: 6, marginTop: 2 }}
-                            />
-                            <RNText
-                              style={{
-                                fontFamily: fonts.medium,
-                                fontSize: 15,
-                                color: "#777777",
-                              }}
-                            >
-                              {feature}
-                            </RNText>
-                          </View>
-                        ))}
-
-                        {details.featuresDesc.map((desc, index) => (
+                            {details.title}
+                          </RNText>
                           <RNText
-                            key={index}
                             style={{
                               fontFamily: fonts.medium,
-                              fontSize: 14,
-                              color: "#555",
-                              marginTop: 6,
+                              fontSize: 24,
+                              color: "#999999",
+                              paddingBottom: 30,
                             }}
                           >
-                            {desc}
+                            {details.desc}
                           </RNText>
-                        ))}
-
-                        <Card.Actions>
-                          <Button
-                            mode="contained"
-                            buttonColor="#195E4B"
-                            textColor="#FFFFFF"
-                            style={{ width: "100%", borderRadius: 5, marginTop: 20 }}
-                            labelStyle={{ fontFamily: fonts.medium }}
-                            onPress={() => handleSelectPlan(plan)}
+                          <RNText
+                            style={{
+                              fontFamily: fonts.medium,
+                              fontSize: 32,
+                              color: "#195E4B",
+                              marginBottom: 10,
+                            }}
                           >
-                            Choose & Continue
-                          </Button>
-                        </Card.Actions>
-                      </Card>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </List.Section>
-    </ScrollView>
+                            {details.priceVisit}
+                          </RNText>
+
+                          {details.features.map((feature, index) => (
+                            <View
+                              key={index}
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "flex-start",
+                                marginBottom: 4,
+                              }}
+                            >
+                              <MaterialIcons
+                                name="check"
+                                size={15}
+                                color="#195E4B"
+                                style={{ marginRight: 6, marginTop: 2 }}
+                              />
+                              <RNText
+                                style={{
+                                  fontFamily: fonts.medium,
+                                  fontSize: 15,
+                                  color: "#777777",
+                                }}
+                              >
+                                {feature}
+                              </RNText>
+                            </View>
+                          ))}
+
+                          {details.featuresDesc.map((desc, index) => (
+                            <RNText
+                              key={index}
+                              style={{
+                                fontFamily: fonts.medium,
+                                fontSize: 14,
+                                color: "#555",
+                                marginTop: 6,
+                              }}
+                            >
+                              {desc}
+                            </RNText>
+                          ))}
+
+                          <Card.Actions>
+                            <Button
+                              mode="contained"
+                              buttonColor="#195E4B"
+                              textColor="#FFFFFF"
+                              style={{ width: "100%", borderRadius: 5, marginTop: 20 }}
+                              labelStyle={{ fontFamily: fonts.medium }}
+                              onPress={() => handleSelectPlan(plan)}
+                            >
+                              Choose & Continue
+                            </Button>
+                          </Card.Actions>
+                        </Card>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </List.Section>
+      </View>
+    </Animated.ScrollView>
   );
 }

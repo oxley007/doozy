@@ -282,7 +282,7 @@ export default function PlanScreen() {
 
   return (
     <ScrollView className="flex-1 bg-gray-100 p-4">
-      <View style={{ paddingTop: 20, paddingBottom: 40 }}>
+      <View style={{ paddingTop: 10, paddingBottom: 10 }}>
         <RNText style={{ fontFamily: fonts.bold, fontSize: 24, color: "#195E4B" }}>
           Dog-doo Subscriptions
         </RNText>

@@ -37,6 +37,11 @@ const bookingSlice = createSlice({
       state.bookingComplete = false;
       state.selectedDates = [];
     },
+    clearBookingState(state) {
+      state.selectedDates = [];
+      state.bookings = [];
+      state.bookingComplete = false;
+    },
     updateBookingConfirmed(
       state,
       action: PayloadAction<{ bookingId: string; confirmed: boolean }>
@@ -72,6 +77,7 @@ export const {
   setBookings,
   addBooking,
   clearBookings,
+  clearBookingState,
   updateBookingConfirmed,
   setBookingComplete,
   setSelectedDates,

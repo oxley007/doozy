@@ -4,13 +4,26 @@ import { Card, Button } from "react-native-paper";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import fonts from "../../assets/fonts/fonts";
+import { useSelector, useDispatch } from "react-redux";
+import { setSelectedDates, setBookings, setBookingComplete } from "../../store/bookingSlice";
+import FadeInOutSection from '../Fade/FadeInOutSection';
 
 export default function OneOffPickupAccordion() {
+  const dispatch = useDispatch();
   const navigation = useNavigation<any>();
   const [expanded, setExpanded] = useState(false);
+  const user = useSelector((state: RootState) => state.user);
 
   const handleBookNow = () => {
-    navigation.navigate("BookingAddressHome");
+    dispatch(setSelectedDates([]));
+    dispatch(setBookings([]));
+    dispatch(setBookingComplete(false));
+
+    if (user.address?.formattedAddress) {
+      navigation.navigate("BookingSignUpHome");
+    } else {
+      navigation.navigate("BookingAddressHome");
+    }
   };
 
   return (
@@ -52,7 +65,7 @@ export default function OneOffPickupAccordion() {
         />
       </TouchableOpacity>
 
-      {expanded && (
+      <FadeInOutSection visible={expanded} delay={0}>
         <View
           style={{
             borderRadius: 5,
@@ -61,8 +74,9 @@ export default function OneOffPickupAccordion() {
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0,
             shadowRadius: 0,
-            padding: 20,
-            marginBottom: 40,
+            padding: 10,
+            paddingTop: 30,
+            marginBottom: 0,
             backgroundColor: "#eeeeee",
           }}
         >
@@ -74,7 +88,8 @@ export default function OneOffPickupAccordion() {
               borderBottomRightRadius: 3,
               alignSelf: "flex-start",
               padding: 10,
-              marginBottom: 10,
+              marginBottom: 20,
+              width: '100%'
             }}
           >
             <RNText style={{ fontWeight: "bold", color: "#fff", fontSize: 12 }}>
@@ -149,7 +164,7 @@ export default function OneOffPickupAccordion() {
           <Card.Actions>
             <Button
               mode="contained"
-              buttonColor="#195E4B"
+              buttonColor="#12802B"
               textColor="#FFFFFF"
               style={{ width: "100%", borderRadius: 5, marginTop: 20 }}
               labelStyle={{ fontFamily: fonts.medium, fontSize: 16 }}
@@ -158,8 +173,9 @@ export default function OneOffPickupAccordion() {
               Get a Quote
             </Button>
           </Card.Actions>
+          <View style={{borderTopColor: '#999', borderTopWidth: 1, marginTop: 20}} />
         </View>
-      )}
+      </FadeInOutSection>
     </View>
   );
 }

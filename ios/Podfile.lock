@@ -2439,6 +2439,11 @@ PODS:
     - React-Core
   - RNInAppBrowser (3.7.0):
     - React-Core
+  - RNReanimated (3.6.2):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
+    - ReactCommon/turbomodule/core
   - RNScreens (3.37.0):
     - glog
     - RCT-Folly (= 2022.05.16.00)
@@ -2514,6 +2519,7 @@ DEPENDENCIES:
   - "RNFBFirestore (from `../node_modules/@react-native-firebase/firestore`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNInAppBrowser (from `../node_modules/react-native-inappbrowser-reborn`)
+  - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
@@ -2657,6 +2663,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-gesture-handler"
   RNInAppBrowser:
     :path: "../node_modules/react-native-inappbrowser-reborn"
+  RNReanimated:
+    :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNSVG:
@@ -2744,12 +2752,13 @@ SPEC CHECKSUMS:
   RNFBFirestore: 78a65900a9d64a44676a62b6f16c17fc8167a52d
   RNGestureHandler: 025e54543330650898436f429d9220ebf64d22f5
   RNInAppBrowser: 6d3eb68d471b9834335c664704719b8be1bfdb20
+  RNReanimated: 582d97aac4c674aba18e7adba6d29bc3929d848d
   RNScreens: 7846157ae38d967c9a9be3dc9c35e3428b450d7e
   RNSVG: e477db5aefe921957a4bcccf755a906f49a4c022
   RNVectorIcons: 433d2e7249acbcd2921118a2ea5f254cba798d31
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: 1b901a6d6eeba4e8a2e8f308f708691cdb5db312
 
-PODFILE CHECKSUM: 9d624593fd4107850b01a6c9999973cf3f330aa3
+PODFILE CHECKSUM: 088f50360a4bd40deca088f47406561b4e3d097a
 
 COCOAPODS: 1.16.2
