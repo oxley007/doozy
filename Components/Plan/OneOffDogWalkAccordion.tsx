@@ -1,31 +1,32 @@
 import React, { useState } from "react";
 import { View, Text as RNText, Image, TouchableOpacity } from "react-native";
-import { List, Card, Button } from "react-native-paper";
+import { Card, Button } from "react-native-paper";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import fonts from "../../assets/fonts/fonts";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store/store";
+import { clearBookingState } from "../../store/bookingSlice";
+import FadeInOutSection from '../Fade/FadeInOutSection';
 
 export default function OneOffDogWalkAccordion() {
+  const dispatch = useDispatch();
   const navigation = useNavigation<any>();
-    const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-    // Get user info from Redux
-    const user = useSelector((state: RootState) => state.user);
+  const user = useSelector((state: RootState) => state.user);
 
-    const handleBookNow = () => {
-        if (user.address?.formattedAddress) {
-          // User already has an address, skip to BookingSignUpHome
-          navigation.navigate("BookingSignUpHome");
-        } else {
-          // No address yet, go to BookingAddressHome
-          navigation.navigate("BookingAddressHome");
-        }
-      };
+  const handleBookNow = () => {
+    dispatch(clearBookingState());
+    if (user.address?.formattedAddress) {
+      navigation.navigate("BookingSignUpHome");
+    } else {
+      navigation.navigate("BookingAddressHome");
+    }
+  };
 
   return (
-    <View style={{ marginVertical: 10 }}>
+    <View style={{ marginVertical: 10, paddingBottom: 20 }}>
       <TouchableOpacity
         onPress={() => setExpanded(!expanded)}
         style={{
@@ -62,14 +63,16 @@ export default function OneOffDogWalkAccordion() {
         />
       </TouchableOpacity>
 
-      {expanded && (
+      {/* FadeInOutSection now controls mounting/unmounting */}
+      <FadeInOutSection visible={expanded} delay={0}>
         <View
           style={{
             borderRadius: 5,
             elevation: 0,
             shadowColor: "transparent",
-            padding: 20,
-            marginBottom: 40,
+            padding: 10,
+            paddingTop: 30,
+            marginBottom: 0,
             backgroundColor: "#eeeeee",
           }}
         >
@@ -81,7 +84,8 @@ export default function OneOffDogWalkAccordion() {
               borderBottomRightRadius: 3,
               alignSelf: "flex-start",
               padding: 10,
-              marginBottom: 10,
+              marginBottom: 20,
+              width: '100%'
             }}
           >
             <RNText style={{ fontWeight: "bold", color: "#fff", fontSize: 12 }}>
@@ -155,38 +159,10 @@ export default function OneOffDogWalkAccordion() {
             </View>
           ))}
 
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 25,
-              marginBottom: 10,
-            }}
-            onPress={() => navigation.navigate("MeetAndrewScreen")}
-          >
-            <Image
-              source={require("../../assets/images/andrew.jpg")}
-              style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
-            />
-            <RNText
-              style={{
-                flex: 1,
-                flexShrink: 1,
-                fontFamily: fonts.medium,
-                fontSize: 15,
-                color: "#195E4B",
-              }}
-            >
-              You’ll be walked by{" "}
-              <RNText style={{ fontWeight: "bold" }}>Andrew</RNText> — read more in{" "}
-              <RNText style={{ textDecorationLine: "underline" }}>his profile</RNText>.
-            </RNText>
-          </TouchableOpacity>
-
           <Card.Actions>
             <Button
               mode="contained"
-              buttonColor="#195E4B"
+              buttonColor="#12802B"
               textColor="#FFFFFF"
               style={{ width: "100%", borderRadius: 5, marginTop: 20 }}
               labelStyle={{ fontFamily: fonts.medium, fontSize: 16 }}
@@ -196,7 +172,7 @@ export default function OneOffDogWalkAccordion() {
             </Button>
           </Card.Actions>
         </View>
-      )}
+      </FadeInOutSection>
     </View>
   );
 }

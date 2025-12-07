@@ -1,5 +1,6 @@
 // App.tsx
 import 'react-native-gesture-handler'; // MUST be first
+import 'react-native-reanimated';
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, NativeModules, useColorScheme, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native'; // if you want to navigate
@@ -11,6 +12,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import GlobalFont from 'react-native-global-font';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import store, { persistor, RootState } from './store/store';
 import MainNavigator from './navigation/MainNavigator';
@@ -61,6 +63,13 @@ function AppWrapper() {
     }, [navigation]);
     */
 
+    useEffect(() => {
+        const clearPersist = async () => {
+          await AsyncStorage.removeItem('persist:root');
+          console.log("persist:root cleared (pre-hydration)");
+        };
+        clearPersist();
+      }, []);
 
   useEffect(() => {
     console.log('🔍 NativeModules keys:', Object.keys(NativeModules));

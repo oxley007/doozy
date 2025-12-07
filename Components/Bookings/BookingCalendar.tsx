@@ -286,8 +286,8 @@ useEffect(() => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#E9FCDA" }}>
-      <StyledView className="flex-1" style={{ backgroundColor: "#f9f9f9" }}>
+    <SafeAreaView style={{ flex: 1, }}>
+      <StyledView className="flex-1">
         <RNText style={{ fontFamily: fonts.bold, fontSize: 22, color: "#195E4B", padding: 10 }}>
           Book Your Spot
         </RNText>
@@ -466,7 +466,7 @@ useEffect(() => {
                               <View key={e.employeeId} style={{ marginBottom: 12 }}>
                                 {/* Profile */}
                                 <TouchableOpacity
-                                  onPress={() => navigation.navigate("MeetAndrewScreen", { employeeId: e.employeeId })}
+                                  onPress={() => navigation.navigate("MeetEmployeeScreen", { employeeId: e.employeeId })}
                                   style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
                                 >
                                   <Image

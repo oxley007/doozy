@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, ActivityIndicator, StyleSheet, Alert } from "react-native";
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, ScrollView, Image, ActivityIndicator, StyleSheet, Alert, Animated, Dimensions } from "react-native";
 import { styled } from "nativewind";
 import { useNavigation } from "@react-navigation/native";
 import auth from '@react-native-firebase/auth';
@@ -7,6 +7,7 @@ import firestore from '@react-native-firebase/firestore';
 import { useDispatch } from 'react-redux';
 import { setUser, setUserDetails } from '../../store/authSlice';
 import { Button } from "react-native-paper";
+import * as Animatable from 'react-native-animatable';
 
 import PlanScreen from './PlanScreen';
 import DogWalkPlanScreen from './DogWalkPlanScreen';
@@ -16,18 +17,28 @@ import WhatsIncludeAndWhy from './WhatsIncludeAndWhy';
 import Testimonials from './Testimonials';
 import OneOffPickupAccordion from './OneOffPickupAccordion';
 import OneOffDogWalkAccordion from './OneOffDogWalkAccordion';
+import FadeInOutSection from '../Fade/FadeInOutSection';
+import createFadeInOnScroll from '../Fade/FadeInOnScroll';
 import fonts from '../../assets/fonts/fonts.js';
 
 const StyledView = styled(View);
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const scrollRef = useRef<ScrollView>(null);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
-  const [hasNavigated, setHasNavigated] = useState(false); // prevent multiple navigations
+  const [hasNavigated, setHasNavigated] = useState(false);
 
+  // scrollY for fade-on-scroll
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Generate the component with scrollY injected
+  const FadeInOnScroll = createFadeInOnScroll(scrollY);
+
+  // Auth + fetch user
   useEffect(() => {
-    let isMounted = true; // prevents setState on unmounted component
+    let isMounted = true;
 
     const fetchUserData = async (uid: string) => {
       try {
@@ -47,7 +58,6 @@ export default function HomeScreen() {
       if (user && !hasNavigated && isMounted) {
         setHasNavigated(true);
 
-        // Navigation reset
         setTimeout(() => {
           try {
             navigation.reset({
@@ -60,7 +70,6 @@ export default function HomeScreen() {
           }
         }, 300);
 
-        // Firestore fetch
         fetchUserData(user.uid);
       } else if (!user && isMounted) {
         setLoading(false);
@@ -83,94 +92,99 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#E9FCDA' }}>
-      <ScrollView style={{ padding: 20 }}>
-        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          <Image
-            source={require('../../assets/images/Doozy_dog_logo.png')}
-            style={{ width: 325, height: 325 }}
-            resizeMode="contain"
-          />
-        </View>
+      <Animated.ScrollView
+        ref={scrollRef}
+        style={{ padding: 20 }}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+      >
+        {/* Logo */}
+        <FadeInOutSection delay={100}>
+          <View style={{ justifyContent: 'center', alignItems: 'center', paddingTop: 40 }}>
+            <Image
+              source={require('../../assets/images/doozy_nz_app_logo_web.png')}
+              style={{ width: 225, height: 225 }}
+              resizeMode="contain"
+            />
+          </View>
+        </FadeInOutSection>
 
-        <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 40 }}>
-          <Text style={{ fontFamily: fonts.bold, fontSize: 32, color: '#195E4B' }}>Pick your plan..</Text>
-          <Text style={{ fontFamily: fonts.bold, fontSize: 28, color: '#999999', lineHeight: 28, textAlign: 'center' }}>
+        <FadeInOutSection delay={300}>
+          <Text style={{ fontFamily: fonts.bold, fontSize: 32, color: '#195E4B', textAlign: 'center' }}>
+            Pick your plan.
+          </Text>
+          <Text style={{ fontFamily: fonts.bold, fontSize: 28, color: '#999999', lineHeight: 28, textAlign: 'center', paddingBottom: 40 }}>
             From doggy walks to dirty doo. We doo the work!
           </Text>
-        </View>
+        </FadeInOutSection>
 
-        <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
-          <View style={{ paddingTop: 20, paddingBottom: 40 }}>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 32, color: '#195E4B' }}>
-              One-Off Options
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.bold,
-                fontSize: 18,
-                color: "#999",
-                lineHeight: 24,
-                marginTop: 10,
-              }}
-            >
-              We’re flexible — book a one-off dog poop pickup or a 30-minute street walk whenever you need!
-            </Text>
-            <Text
-              style={{
-                fontFamily: fonts.bold,
-                fontSize: 18,
-                color: "#999",
-                lineHeight: 24,
-                marginTop: 10,
-              }}
-            >
-              Or see further below to{' '}
-              <Text style={{ backgroundColor: 'yellow', fontWeight: 'bold' }}>
-                save up to 70%
-              </Text>{' '}
-               by subscribing to our doggy doo pickup or dog walking services!
-            </Text>
-          </View>
-          <OneOffPickupAccordion />
-          <OneOffDogWalkAccordion />
-        </StyledView>
+        {/* One-Off Options */}
+          <FadeInOutSection delay={600}>
+            <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
+            <View style={{ paddingTop: 20, paddingBottom: 40 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 32, color: '#195E4B' }}>
+                One-Off Options
+              </Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 18, color: "#999", lineHeight: 24, marginTop: 10 }}>
+                We’re flexible — book a one-off dog poop pickup or a 30-minute street walk whenever you need!
+              </Text>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 18, color: "#999", lineHeight: 24, marginTop: 10 }}>
+                Or see further below to{' '}
+                <Text style={{ color: '#333', fontWeight: 'bold' }}>
+                  save up to 70%
+                </Text>{' '}
+                 by subscribing to our doggy doo pickup or dog walking services!
+              </Text>
+            </View>
+              <OneOffPickupAccordion />
+              <OneOffDogWalkAccordion />
+            </StyledView>
+          </FadeInOutSection>
 
-        <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
-          <DogWalkPlanScreen />
-          <PlanScreen />
-          <CombinedPlanScreen />
-        </StyledView>
 
-        <WhatsIncludeAndWhy />
-        <Testimonials />
-        <FAQAccordion />
+        {/* Plans */}
+        <FadeInOnScroll>
+          <StyledView style={{ borderRadius: 5, padding: 20, marginBottom: 40, backgroundColor: "#eeeeee" }}>
+            <DogWalkPlanScreen scrollY={scrollY} />
+            <PlanScreen />
+            <CombinedPlanScreen />
+          </StyledView>
+        </FadeInOnScroll>
 
+        {/* Extras */}
+        <FadeInOnScroll>
+          <WhatsIncludeAndWhy />
+        </FadeInOnScroll>
+        <FadeInOnScroll>
+          <Testimonials />
+        </FadeInOnScroll>
+        <FadeInOnScroll>
+          <FAQAccordion />
+        </FadeInOnScroll>
+
+        {/* Login Card */}
         <StyledView style={styles.card}>
           <View style={{ justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
             <Text style={{ fontFamily: fonts.bold, fontSize: 24, color: '#195E4B', marginBottom: 10 }}>
               Already Signed Up? Login!
             </Text>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 18, color: '#666666', lineHeight: 24, textAlign: 'center', paddingHorizontal: 20 }}>
-              If you have already signed up and want to log in, click the button below to go to the login page.
-            </Text>
           </View>
           <Button
             mode="contained"
-            buttonColor="#195E4B"   // background color
-            textColor="#FFFFFF"     // text color
-            style={{
-              fontFamily: fonts.medium,
-              width: '100%',
-              borderRadius: 5,
-              marginTop: 20,
-            }}
+            buttonColor="#195E4B"
+            textColor="#FFFFFF"
+            style={{ fontFamily: fonts.medium, width: '100%', borderRadius: 5, marginTop: 20 }}
             onPress={() => navigation.navigate("LoginScreen", { returnScreen: "Home" })}
           >
             Go to login page
           </Button>
         </StyledView>
+
         <View style={{ marginBottom: 180 }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

@@ -23,7 +23,12 @@ interface BookingTypeSelectorProps {
   scrollViewRef: React.RefObject<ScrollView>;
 }
 
-export default function BookingTypeSelector({ scrollViewRef }: BookingTypeSelectorProps) {
+interface BookingTypeSelectorProps {
+  scrollViewRef: React.RefObject<ScrollView>;
+  onStepChange: (step: number) => void;  // <-- add this
+}
+
+export default function BookingTypeSelector({ scrollViewRef, onStepChange }: BookingTypeSelectorProps) {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const plan = useSelector((state: RootState) => state.plan);
@@ -126,9 +131,10 @@ export default function BookingTypeSelector({ scrollViewRef }: BookingTypeSelect
         // Restore deod
         if (typeof mostRecentBooking.deod !== "undefined") setDeodSelected(Boolean(mostRecentBooking.deod));
 
-        // --- Auto-fill selectedDates from all bookings ---
-        const allSlotKeys = bookingArray.map(b => b.slotKey);
-        dispatch(setSelectedDates(allSlotKeys));
+        // Restore **pending booking selectedDates from Redux**
+        if (user.booking?.selectedDates?.length) {
+          dispatch(setSelectedDates(user.booking.selectedDates));
+        }
 
         // --- Auto-fill assignedEmployee from last booking ---
         setAssignedEmployee({
@@ -151,7 +157,7 @@ export default function BookingTypeSelector({ scrollViewRef }: BookingTypeSelect
   const goToStep = (step: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // smooth animation
     setCurrentStep(step);
-
+    onStepChange(step);
     // scroll to top
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   };
@@ -175,15 +181,15 @@ export default function BookingTypeSelector({ scrollViewRef }: BookingTypeSelect
 
     // ✅ Validate inputs
     if (!walkSelected && !dooSelected) return Alert.alert("Select at least one service");
-    if (!name.trim()) return Alert.alert("Enter your name");
-    if (!email.trim()) return Alert.alert("Enter your email");
+    if (!name.trim()) return Alert.alert("Go back to previous screen and enter your name");
+    if (!email.trim()) return Alert.alert("Go back to previous screen and enter your email");
     if (!validateEmail(email)) return Alert.alert("Enter a valid email");
-    if (!firebaseUser && !password.trim()) return Alert.alert("Enter a password");
-    if (!phone.trim()) return Alert.alert("Enter your phone number");
-    if (!dogBreeds.trim()) return Alert.alert("Enter dog breeds");
+    if (!firebaseUser && !password.trim()) return Alert.alert("Go back to previous screen and enter a password");
+    if (!phone.trim()) return Alert.alert("Go back to previous screen and enter your phone number");
+    if (!dogBreeds.trim()) return Alert.alert("Go back to previous screen and enter dog breeds");
     if (!numberOfDogs || parseInt(numberOfDogs) < 1) return Alert.alert("At least 1 dog");
     if (parseInt(numberOfDogs) > 3) return Alert.alert("Max 3 dogs");
-    if (!accessYard.trim()) return Alert.alert("Tell us how we access yard");
+    if (!accessYard.trim()) return Alert.alert("Go back to previous screen and tell us how we access yard");
     if (dooSelected && !yardSize) return Alert.alert("Tell us the yard size");
     if (!assignedEmployee) return Alert.alert("Select an employee for your booking");
     if (!acceptedTerms) return Alert.alert("Accept Terms & Conditions");
@@ -359,7 +365,19 @@ const handlePayCallback = async (amountCents: number, bookingIds: string[], fire
       className="flex-1 p-4 bg-white"
       keyboardShouldPersistTaps="handled"
     >
-
+    <View className="items-center mb-4">
+      <RNText
+        style={{
+          fontFamily: fonts.bold,
+          fontSize: 26,
+          color: '#999999',
+          textAlign: 'center',
+          paddingBottom: 10,
+        }}
+      >
+        Step {currentStep + 1} of 3
+      </RNText>
+    </View>
 
       {/* --- Dog Service Form --- */}
       {currentStep === 0 && (
@@ -902,14 +920,14 @@ const handlePayCallback = async (amountCents: number, bookingIds: string[], fire
             mode="contained"
             textColor="#FFFFFF"
             onPress={handleSubmit}
-            disabled={loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1}
+            disabled={loading || !acceptedTerms || !!numberOfDogsError}
             style={{
               paddingVertical: 12,
               borderRadius: 6,
               backgroundColor: loading || !acceptedTerms || !!numberOfDogsError || !numberOfDogs || parseInt(numberOfDogs || '0', 10) < 1
                 ? '#999999'
                 : '#195E4B',
-              marginBottom: 40,
+              marginBottom: 20,
             }}
             labelStyle={{ fontSize: 16, fontWeight: '800' }}
           >

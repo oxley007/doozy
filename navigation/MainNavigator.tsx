@@ -28,6 +28,7 @@ import EditOverrides from '../Components/Admin/EditOverrides.tsx';
 import AddressCheckerMinimal from '../Components/CheckAddress/AddressCheckerMinimal.tsx';
 import AddPickupCount from '../Components/PickUpCount/AddPickupCount.tsx'
 import MeetAndrewScreen from '../Components/MeetAndrew/MeetAndrewScreen.tsx'
+import MeetEmployeeScreen from '../Components/MeetAndrew/MeetEmployeeScreen.tsx'
 import BookingAddressHome from '../Components/Bookings/BookingAddressHome.tsx'
 import BookingSignUpHome from '../Components/Bookings/BookingSignUpHome.tsx'
 import EmployeeBookingDetails from '../Components/AdminBookings/EmployeeBookingDetails.tsx'
@@ -201,6 +202,11 @@ export default function MainNavigator() {
           name="PaymentSuccessBookingScreen"
           component={PaymentSuccessBookingScreen}
           options={{ title: 'Payment Success Booking Screen!', headerShown: false }}
+        />
+        <Stack.Screen
+          name="MeetEmployeeScreen"
+          component={MeetEmployeeScreen}
+          options={{ title: 'Meet Employee!', headerShown: false }}
         />
 
         {/* Add other screens here */}
