@@ -22,6 +22,9 @@ target 'DoozyApp' do
   pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
   pod 'RNInAppBrowser', :path => '../node_modules/react-native-inappbrowser-reborn'
   pod 'RNReanimated', :path => '../node_modules/react-native-reanimated'
+  pod 'react-native-maps', :path => '../node_modules/react-native-maps'
+  pod 'GoogleMaps'
+  pod 'GooglePlaces'
 
 
   # Firebase core + RNFirebase modules
@@ -29,9 +32,6 @@ target 'DoozyApp' do
   pod 'RNFBApp', :path => '../node_modules/@react-native-firebase/app'
   pod 'RNFBAuth', :path => '../node_modules/@react-native-firebase/auth'
   pod 'RNFBFirestore', :path => '../node_modules/@react-native-firebase/firestore'
-
-  # Google Places dynamic
-  pod 'GooglePlaces'
 
   target 'DoozyAppTests' do
     inherit! :complete

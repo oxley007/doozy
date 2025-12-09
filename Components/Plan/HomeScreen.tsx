@@ -18,6 +18,8 @@ import Testimonials from './Testimonials';
 import OneOffPickupAccordion from './OneOffPickupAccordion';
 import OneOffDogWalkAccordion from './OneOffDogWalkAccordion';
 import FadeInOutSection from '../Fade/FadeInOutSection';
+import GoToCarbnMapButton from '../../Carbn/components/GoToCarbnMapButton';
+
 import createFadeInOnScroll from '../Fade/FadeInOnScroll';
 import fonts from '../../assets/fonts/fonts.js';
 
@@ -185,6 +187,11 @@ export default function HomeScreen() {
 
         <View style={{ marginBottom: 180 }} />
       </Animated.ScrollView>
+
+      <GoToCarbnMapButton />
+
+      <View style={{ marginBottom: 80 }} />
+
     </View>
   );
 }

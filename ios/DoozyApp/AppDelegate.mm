@@ -2,6 +2,7 @@
 #import <React/RCTBundleURLProvider.h>
 #import <Firebase.h>
 #import <React/RCTLinkingManager.h>
+#import <GoogleMaps/GoogleMaps.h>
 
 @implementation AppDelegate
 
@@ -10,6 +11,9 @@
   if ([FIRApp defaultApp] == nil) {
     [FIRApp configure];
   }
+
+  // Google Maps API key
+  [GMSServices provideAPIKey:@"AIzaSyAcz7dy7tlTmazzWRmLZ8n3MJNOlhT7drc"];
 
   self.moduleName = @"DoozyApp"; // <- your app name
   self.initialProps = @{};

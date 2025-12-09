@@ -1,0 +1,56 @@
+*** node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMap.m
+*** Comment out heatmap import
+-#import "AIRGoogleMapHeatmap.h"
++#import "AIRGoogleMapHeatmap.h" // commented out - ignoring heatmaps
+
+*** Comment out _heatmaps initialization
+-    _heatmaps = [NSMutableArray array];
++    // _heatmaps = [NSMutableArray array]; // ignored
+
+*** Comment out heatmap handling in insertReactSubview
+-  else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
+-    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
+-    heatmap.heatmap.map = self;
+-    [self.heatmaps addObject:heatmap];
+-  }
++  // else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
++  //   AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
++  //   heatmap.heatmap.map = self;
++  //   [self.heatmaps addObject:heatmap];
++  // }
+
+*** Comment out overlay handling in insertReactSubview
+-  else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]) {
+-    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
+-    overlay.overlay.map = self;
+-    [self.overlays addObject:overlay];
+-  }
++  // else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]) {
++  //    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
++  //    overlay.overlay.map = self;
++  //    [self.overlays addObject:overlay];
++  // }
+
+*** Comment out heatmap handling in removeReactSubview
+-  else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
+-    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
+-    heatmap.heatmap.map = nil;
+-    [self.heatmaps removeObject:heatmap];
+-  }
++  // else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
++  //    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
++  //    heatmap.heatmap.map = nil;
++  //    [self.heatmaps removeObject:heatmap];
++  // }
+
+*** Comment out overlay handling in removeReactSubview
+-  else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]){
+-    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
+-    overlay.overlay.map = nil;
+-    [self.overlays removeObject:overlay];
+-  }
++  // else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]){
++  //    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
++  //    overlay.overlay.map = nil;
++  //    [self.overlays removeObject:overlay];
++  // }
